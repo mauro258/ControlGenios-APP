@@ -1,12 +1,19 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import React from "react";
 import { colors } from "../../config/color";
 
-export default function FormInput() {
+export default function FormInput(props) {
+  const { label, placeholder, error } = props;
+
   return (
-    <View>
-      <Text>FormInput</Text>
-    </View>
+    <>
+      <View style={styles.container}>
+        <Text style={styles.textLabel}>{label}</Text>
+
+        {error && <Text style={styles.textError}>{error}</Text>}
+      </View>
+      <TextInput {...props} style={styles.input} placeholder={placeholder} />
+    </>
   );
 }
 

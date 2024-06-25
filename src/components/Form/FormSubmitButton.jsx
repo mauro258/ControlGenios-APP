@@ -1,11 +1,15 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 
-export default function FormSubmitButton() {
+export default function FormSubmitButton({ title, submitting, onPress }) {
+  const backgroundColor = "rgba(27,27.51,0.4)";
   return (
-    <View>
-      <Text>FormSubmitButton</Text>
-    </View>
+    <TouchableOpacity
+      style={[styles.container, { backgroundColor }]}
+      onPress={() => onPress}
+    >
+      <Text style={{ fontSize: 18, color: "#fff" }}>{title}</Text>
+    </TouchableOpacity>
   );
 }
 
