@@ -1,13 +1,169 @@
-import { StyleSheet, Text, View } from "react-native";
-import React from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import React, { useState } from "react";
 import { colors } from "../config/color";
 import { SPACING } from "../config/spacing";
+import * as Yup from "yup";
+import { Formik } from "formik";
+import FormContainer from "../components/Form/FormContainer";
+import FormInput from "../components/Form/FormInput";
+import * as ImagePicker from "expo-image-picker";
+import FormSubmitButton from "../components/Form/FormSubmitButton";
+import headerImage from "../imgs/GeniosLogo.png";
+import axios from "axios";
+import { useNavigation } from "@react-navigation/native";
 
-export default function () {
+const ipValidationSchema = Yup.string()
+  .required("IP es requerido!")
+  .test(
+    "is-ip",
+    "El campo IP debe ser numérico y tener el formato correcto",
+    (value) => {
+      if (!value) return false;
+      const ipRegex =
+        /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      return ipRegex.test(value);
+    }
+  );
+
+const validationSchema = Yup.object({
+  name: Yup.string()
+    .trim()
+    .min(3, "Nombre invalido")
+    .required("Nombre es requerido!"),
+
+  ip: ipValidationSchema,
+});
+
+export default function ServiceActionScreen() {
+  const [image, setImage] = useState("");
+  const navigation = useNavigation();
+  const serviceInfo = {
+    name: "",
+    ip: "",
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const saveService = async (values, formikActions) => {
+    try {
+      const { name, ip } = values;
+
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("ip", ip);
+      if (image) {
+        formData.append("img", {
+          name: "generico.jpg",
+          uri: image,
+          type: "image/jpg",
+        });
+      }
+      
+
+      const { data } = await axios.post("/service", formData, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      console.log(data);
+      navigation.goBack();
+    } catch (error) {
+      console.log("Error in saveService", error.message);
+    }
+  };
+
   return (
-    <View>
-      <Text> </Text>
-    </View>
+    <>
+      <View style={styles.container}>
+        <View style={styles.headerImageContainer}>
+          <Image source={headerImage} style={styles.headerImage} />
+        </View>
+        <FormContainer>
+          <Formik
+            initialValues={serviceInfo}
+            validationSchema={validationSchema}
+            onSubmit={saveService}
+          >
+            {({
+              values,
+              errors,
+              touched,
+              isSubmitting,
+              handleChange,
+              handleBlur,
+              handleSubmit,
+            }) => {
+              const { name, ip } = values;
+              return (
+                <>
+                  <ScrollView contentContainerStyle={styles.formContainer}>
+                    <FormInput
+                      value={values.name}
+                      error={touched.name && errors.name}
+                      onChangeText={handleChange("name")}
+                      onBlur={handleBlur("name")}
+                      label="Nombre"
+                      placeholder="Nombre"
+                    />
+                    <FormInput
+                      value={values.ip}
+                      error={touched.ip && errors.ip}
+                      onChangeText={handleChange("ip")}
+                      onBlur={handleBlur("ip")}
+                      label="IP"
+                      placeholder="IP"
+                    />
+
+                    <View>
+                      <TouchableOpacity
+                        style={styles.uploadBtnContainer}
+                        onPress={pickImage}
+                      >
+                        {image ? (
+                          <Image
+                            source={{ uri: image }}
+                            style={{ width: "100%", height: "100%" }}
+                          />
+                        ) : (
+                          <Text style={styles.uploadBtn}>
+                            Seleccionar imagen
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                  <View style={styles.buttonContainer}>
+                    <FormSubmitButton
+                      submitting={isSubmitting}
+                      onPress={handleSubmit}
+                      title="Guardar"
+                    />
+                  </View>
+                </>
+              );
+            }}
+          </Formik>
+        </FormContainer>
+      </View>
+    </>
   );
 }
 
@@ -17,6 +173,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: SPACING * 2,
+  },
+  headerImage: {
+    width: 300,
+    height: 100,
+    resizeMode: "cover",
+  },
+  formContainer: {
+    flexGrow: 1,
+    padding: 20,
   },
 
   uploadBtnContainer: {
@@ -39,6 +204,9 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     fontWeight: "bold",
     color: colors.light,
+  },
+  buttonContainer: {
+    padding: 20,
   },
 
   backButton: {
