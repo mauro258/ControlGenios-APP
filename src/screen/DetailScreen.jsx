@@ -14,12 +14,13 @@ import { colors } from "../config/color";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 
 const screenHeight = Dimensions.get("screen").height;
 
 export default function DetailScreen({ route }) {
   const id = route.params;
+  const isFocused = useIsFocused();
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(true);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -40,14 +41,14 @@ export default function DetailScreen({ route }) {
   };
 
   useEffect(() => {
-    getService();
-  }, [id]);
+    isFocused && getService();
+  }, [isFocused]);
 
   const deleteService = async () => {
     try {
       setIsRemoving(true);
       const { data } = await axios.delete(`/service/${service._id}`);
-      console.log(data);
+
       setIsRemoving(false);
       navigation.navigate("HomeScreen");
     } catch (error) {
@@ -100,7 +101,10 @@ export default function DetailScreen({ route }) {
       </ScrollView>
 
       <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={styles.buttonRadius}>
+        <TouchableOpacity
+          style={styles.buttonRadius}
+          onPress={() => navigation.navigate("ServiceActionScreen", service)}
+        >
           <LinearGradient
             colors={[colors["dark-gray"], colors.black]}
             style={styles.gradient}

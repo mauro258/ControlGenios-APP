@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -26,9 +27,9 @@ const ipValidationSchema = Yup.string()
     "El campo IP debe ser numérico y tener el formato correcto",
     (value) => {
       if (!value) return false;
-      const ipRegex =
-        /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-      return ipRegex.test(value);
+      const ipWithPortRegex =
+        /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]{1,5})?$/;
+      return ipWithPortRegex.test(value);
     }
   );
 
@@ -41,12 +42,14 @@ const validationSchema = Yup.object({
   ip: ipValidationSchema,
 });
 
-export default function ServiceActionScreen() {
-  const [image, setImage] = useState("");
+export default function ServiceActionScreen({ route }) {
+  const service = route.params;
+  const [image, setImage] = useState(service?.imgUrl || "");
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
   const serviceInfo = {
-    name: "",
-    ip: "",
+    name: service?.name || "",
+    ip: service?.ip || "",
   };
 
   const pickImage = async () => {
@@ -55,40 +58,79 @@ export default function ServiceActionScreen() {
       allowsEditing: true,
       quality: 1,
     });
-
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
   };
 
-  const saveService = async (values, formikActions) => {
+  const saveService = async (formData) => {
     try {
-      const { name, ip } = values;
-
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("ip", ip);
-      if (image) {
-        formData.append("img", {
-          name: "generico.jpg",
-          uri: image,
-          type: "image/jpg",
-        });
-      }
-      
-
-      const { data } = await axios.post("/service", formData, {
+      setIsLoading(true);
+      await axios.post("/service", formData, {
         headers: {
           Accept: "application/json",
           "Content-Type": "multipart/form-data",
         },
       });
-      console.log(data);
-      navigation.goBack();
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.log("Error in saveService", error.message);
     }
   };
+
+  const updateService = async (formData) => {
+    try {
+      setIsLoading(true);
+      await axios.put(`/service/${service._id}`, formData, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setIsLoading(false);
+    } catch (error) {
+      console.log("Error in updateService", error.message);
+    }
+  };
+
+  const actions = async (values, formikActions) => {
+    const { name, ip } = values;
+    const formData = new FormData();
+    if (service) {
+      if (service.imgUrl !== image) {
+        formData.append("img", {
+          name: image.split("/").pop(),
+          uri: image,
+          type: "image/jpg",
+        });
+      }
+    } else {
+      if (image) {
+        formData.append("img", {
+          name: image.split("/").pop(),
+          uri: image,
+          type: "image/jpg",
+        });
+      }
+    }
+
+    formData.append("name", name);
+    formData.append("ip", ip);
+    service ? await updateService(formData) : await saveService(formData);
+
+    formikActions.resetForm();
+    formikActions.setSubmitting(false);
+    navigation.goBack();
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color="grey" size={80} />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -100,7 +142,7 @@ export default function ServiceActionScreen() {
           <Formik
             initialValues={serviceInfo}
             validationSchema={validationSchema}
-            onSubmit={saveService}
+            onSubmit={actions}
           >
             {({
               values,
@@ -154,7 +196,7 @@ export default function ServiceActionScreen() {
                     <FormSubmitButton
                       submitting={isSubmitting}
                       onPress={handleSubmit}
-                      title="Guardar"
+                      title={service ? "Actualizar" : "Guardar"}
                     />
                   </View>
                 </>
