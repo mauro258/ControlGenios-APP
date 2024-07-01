@@ -16,12 +16,18 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./src/imgs/GeniosLogo.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.mauro258.controlGeniosAPP"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ae06ca66-68f0-415d-83bd-d9ed9aec20f8"
+      }
     }
   }
 }

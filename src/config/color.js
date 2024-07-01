@@ -6,6 +6,6 @@ export const colors = {
   "dark-gray": "#302F32",
   white: "#FFFFFF",
   transparent: "transparent",
-  green: "#00FF00", // Ejemplo de color verde
+  green: "#00FF00", 
   red: "#FF0000",
 };
